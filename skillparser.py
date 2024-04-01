@@ -15,20 +15,31 @@ def indeed_single(website):
     return tech_check(text)
     
 
-def linkedin_single(website):
+def linkedin_single(website, technologies):
     dr = webdriver.Chrome()
     dr.get(website)
     time.sleep(1)
     soup = BeautifulSoup(dr.page_source, 'lxml')
-    # print(soup)
-    # f = open("parse.txt", "a")
-    # f.write(str(soup))
-    # f.close()
     listing = soup.findAll("div", {"class": "show-more-less-html__markup show-more-less-html__markup--clamp-after-5 relative overflow-hidden"})
     text = listing[0].get_text()
-    return tech_check(text)
+    return tech_check(text, technologies)
 
-def tech_check(text):
+def load_technologies(filepath):
+    """
+    Load technology keywords from a file into a set.
+    """
+    with open(filepath, 'r') as file:
+        # Assuming each technology is quoted and separated by commas
+        technologies = file.read().split(',')
+        # Remove quotes and strip whitespace
+        technologies = [tech.strip().strip('"') for tech in technologies if tech.strip()]
+    return set(technologies)
+
+def tech_check(text, technologies):
+    """
+    Check for the presence of technology-related keywords in text.
+    """
+    # Normalize the text
     lines = (line.strip() for line in text.splitlines())
     chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
 
@@ -43,25 +54,25 @@ def tech_check(text):
         print("An exception occurred")
     text = text.decode('utf-8')
     text = re.sub("[^a-zA-Z.+3]"," ", text)
-    text = text.lower().split()
+    words = text.split()  # Split text into words
+    # Remove stopwords
     stop_words = set(stopwords.words("english"))
-    text = [w for w in text if not w in stop_words]
-    text = list(set(text))
-
-    hasPython = hasJava = hasCPlus = False
-
-    for word in text:
-        if word == 'python':
-            hasPython = True
-        if word == 'java':
-            hasJava = True
-        if word == 'c++':
-            hasCPlus = True
-    print("requires C++: ", hasCPlus, " requires Java: ", hasJava, " requires Python: ", hasPython)
-    return("requires C++: ", hasCPlus, " requires Java: ", hasJava, " requires Python: ", hasPython)
+    words = [w for w in words if not w in stop_words]
+    # Check each word against the set of technology keywords
+    found_technologies = {word for word in words if word in technologies}
+    
+    return list(found_technologies)
 
 def main():
-    return linkedin_single("https://www.linkedin.com/jobs/view/3860332134")
+    # Path to the file containing common technologies
+    filepath = "./common_technologies.txt"  # Update this to the actual path
+
+    # Load technologies from the file
+    technologies = load_technologies(filepath)
+    
+    # Check the example text for technology keywords
+    text = linkedin_single('https://www.linkedin.com/jobs/view/3865660254', technologies)
+    print("Found technologies:", text)
 
 if __name__ == '__main__':
     main()
