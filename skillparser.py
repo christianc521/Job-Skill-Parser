@@ -1,9 +1,48 @@
 from bs4 import BeautifulSoup # For HTML parsing
-from selenium import webdriver #
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions as EC
 import requests
 import re # Regular expressions
 import time
 from nltk.corpus import stopwords
+
+
+def load_linkedin():
+    dr = webdriver.Chrome() # open Chrome
+    dr.implicitly_wait(10) # wait for Chrome to load
+    dr.get('https://www.linkedin.com/login') # open LinkedIn login page
+    email_input = dr.find_element(By.ID, 'username') # input username
+    password_input = dr.find_element(By.ID, 'password') # input password
+    email_input.send_keys('christian@cogstudios.net')
+    password_input.send_keys('Awesome98?')
+    password_input.send_keys(Keys.ENTER)
+    time.sleep(5)
+    dr.get(f'https://www.linkedin.com/jobs/search/')
+    time.sleep(5)
+    dr.find_element(By.XPATH, f'//button[@aria-label="Page 1"]').click()
+    ## each page show us some jobs, sometimes show 25, others 13 or 21 ¯\_(ツ)_/¯
+    jobs_lists = dr.find_element(By.CLASS_NAME, 'jobs-search-results-list') #here we create a list with jobs
+    jobs = jobs_lists.find_elements(By.CLASS_NAME, 'jobs-search-results__list-item')#here we select each job to count
+    ## waiting load
+    time.sleep(1)
+    ## the loop below is for the algorithm to click exactly on the number of jobs that is showing in list
+    ## in order to avoid errors that will stop the automation
+    dr.maximize_window() # For maximizing window
+    dr.implicitly_wait(10) # gives an implicit wait for 20 seconds
+    for job in jobs:
+        try:
+            # Move to the job element to ensure it's visible
+            dr.execute_script("arguments[0].scrollIntoView();", job)
+            # Click on the job posting
+            job.click()
+            print('Clicked on a job posting')
+            time.sleep(1)  # Wait a bit for the job details to load (adjust as necessary)
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+    return
 
 def indeed_single(website):
     dr = webdriver.Chrome()
@@ -17,6 +56,7 @@ def indeed_single(website):
 
 def linkedin_single(website, technologies):
     dr = webdriver.Chrome()
+    time.sleep(1)
     dr.get(website)
     time.sleep(1)
     soup = BeautifulSoup(dr.page_source, 'lxml')
@@ -63,16 +103,19 @@ def tech_check(text, technologies):
     
     return list(found_technologies)
 
-def main():
-    # Path to the file containing common technologies
-    filepath = "./common_technologies.txt"  # Update this to the actual path
 
-    # Load technologies from the file
-    technologies = load_technologies(filepath)
+
+def main():
+    # # Path to the file containing common technologies
+    # filepath = "./common_technologies.txt"  # Update this to the actual path
+
+    # # Load technologies from the file
+    # technologies = load_technologies(filepath)
     
-    # Check the example text for technology keywords
-    text = linkedin_single('https://www.linkedin.com/jobs/view/3865660254', technologies)
-    print("Found technologies:", text)
+    # # Check the example text for technology keywords
+    # text = linkedin_single('https://www.linkedin.com/jobs/view/3866842354/', technologies)
+    # print("Found technologies:", text)
+    load_linkedin()
 
 if __name__ == '__main__':
     main()
