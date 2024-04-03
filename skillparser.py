@@ -9,20 +9,19 @@ import time
 from nltk.corpus import stopwords
 
 
-def load_linkedin():
+def load_linkedin(technologies):
     dr = webdriver.Chrome() # open Chrome
     dr.implicitly_wait(10) # wait for Chrome to load
     dr.get('https://www.linkedin.com/login') # open LinkedIn login page
     email_input = dr.find_element(By.ID, 'username') # input username
     password_input = dr.find_element(By.ID, 'password') # input password
-    email_input.send_keys('christian@cogstudios.net')
-    password_input.send_keys('Awesome98?')
+    email_input.send_keys('enter_user')
+    password_input.send_keys('enter_pass?')
     password_input.send_keys(Keys.ENTER)
     time.sleep(5)
     dr.get(f'https://www.linkedin.com/jobs/search/')
     time.sleep(5)
     dr.find_element(By.XPATH, f'//button[@aria-label="Page 1"]').click()
-    ## each page show us some jobs, sometimes show 25, others 13 or 21 ¯\_(ツ)_/¯
     jobs_lists = dr.find_element(By.CLASS_NAME, 'jobs-search-results-list') #here we create a list with jobs
     jobs = jobs_lists.find_elements(By.CLASS_NAME, 'jobs-search-results__list-item')#here we select each job to count
     ## waiting load
@@ -35,10 +34,17 @@ def load_linkedin():
         try:
             # Move to the job element to ensure it's visible
             dr.execute_script("arguments[0].scrollIntoView();", job)
+
             # Click on the job posting
             job.click()
-            print('Clicked on a job posting')
-            time.sleep(1)  # Wait a bit for the job details to load (adjust as necessary)
+            dr.implicitly_wait(10)
+
+            job_title = dr.find_element(By.CLASS_NAME, 'job-details-jobs-unified-top-card__job-title').text
+            print('Job title: ' + job_title)
+            job_link = dr.find_element(By.CLASS_NAME, 'job-details-jobs-unified-top-card__job-title').find_element(By.TAG_NAME, "a").get_attribute("href")
+            print(job_link)
+            job_description = dr.find_element(By.ID, "job-details").text
+            tech_check(job_description, technologies)
         except Exception as e:
             print(f"An error occurred: {e}")
 
@@ -100,22 +106,21 @@ def tech_check(text, technologies):
     words = [w for w in words if not w in stop_words]
     # Check each word against the set of technology keywords
     found_technologies = {word for word in words if word in technologies}
-    
+    print(found_technologies)
+    print('\n')
     return list(found_technologies)
 
 
 
 def main():
-    # # Path to the file containing common technologies
-    # filepath = "./common_technologies.txt"  # Update this to the actual path
+    # Path to the file containing common technologies
+    filepath = "./common_technologies.txt"  # Update this to the actual path
 
-    # # Load technologies from the file
-    # technologies = load_technologies(filepath)
+    # Load technologies from the file
+    technologies = load_technologies(filepath)
     
-    # # Check the example text for technology keywords
-    # text = linkedin_single('https://www.linkedin.com/jobs/view/3866842354/', technologies)
-    # print("Found technologies:", text)
-    load_linkedin()
+    # Check the example text for technology keywords
+    load_linkedin(technologies)
 
 if __name__ == '__main__':
     main()
