@@ -12,38 +12,38 @@ from nltk.corpus import stopwords
 def load_linkedin(technologies):
     dr = webdriver.Chrome() # open Chrome
     dr.implicitly_wait(10) # wait for Chrome to load
-    dr.get('https://www.linkedin.com/login') # open LinkedIn login page
-    email_input = dr.find_element(By.ID, 'username') # input username
-    password_input = dr.find_element(By.ID, 'password') # input password
-    email_input.send_keys('enter_user')
-    password_input.send_keys('enter_pass?')
-    password_input.send_keys(Keys.ENTER)
+
+    dr.get(f'https://www.linkedin.com/jobs/search?keywords=software%2Bdeveloper&location=United%2BStates&geoId=103644278')
     time.sleep(5)
-    dr.get(f'https://www.linkedin.com/jobs/search/')
-    time.sleep(5)
-    dr.find_element(By.XPATH, f'//button[@aria-label="Page 1"]').click()
-    jobs_lists = dr.find_element(By.CLASS_NAME, 'jobs-search-results-list') #here we create a list with jobs
-    jobs = jobs_lists.find_elements(By.CLASS_NAME, 'jobs-search-results__list-item')#here we select each job to count
+    # dr.find_element(By.XPATH, f'//button[@aria-label="Page 1"]').click()
+    jobs_lists = dr.find_element(By.CLASS_NAME, 'jobs-search__results-list') #here we create a list with jobs
+    jobs = jobs_lists.find_elements(By.CLASS_NAME, 'base-search-card')#here we select each job to count
     ## waiting load
     time.sleep(1)
     ## the loop below is for the algorithm to click exactly on the number of jobs that is showing in list
     ## in order to avoid errors that will stop the automation
     dr.maximize_window() # For maximizing window
     dr.implicitly_wait(10) # gives an implicit wait for 20 seconds
-    for job in jobs:
+    for job in jobs[0:5]:
         try:
             # Move to the job element to ensure it's visible
             dr.execute_script("arguments[0].scrollIntoView();", job)
 
             # Click on the job posting
             job.click()
+            time.sleep(5)
             dr.implicitly_wait(10)
 
-            job_title = dr.find_element(By.CLASS_NAME, 'job-details-jobs-unified-top-card__job-title').text
+            # Click on show more
+            show_more = dr.find_element(By.CLASS_NAME, 'show-more-less-html__button')
+            show_more.click()
+            time.sleep(2)
+
+            job_title = dr.find_element(By.CLASS_NAME, 'job-search-card--active').find_element(By.CLASS_NAME, 'base-search-card__title').text
             print('Job title: ' + job_title)
-            job_link = dr.find_element(By.CLASS_NAME, 'job-details-jobs-unified-top-card__job-title').find_element(By.TAG_NAME, "a").get_attribute("href")
+            job_link = dr.find_element(By.CLASS_NAME, 'job-search-card--active').find_element(By.TAG_NAME, "a").get_attribute("href")
             print(job_link)
-            job_description = dr.find_element(By.ID, "job-details").text
+            job_description = dr.find_element(By.CLASS_NAME, "show-more-less-html__markup").text
             tech_check(job_description, technologies)
         except Exception as e:
             print(f"An error occurred: {e}")
